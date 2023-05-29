@@ -1,5 +1,7 @@
-/.xgridtest/
+/**/.xgridtest/
+/**/.xgrid/
 /.vscode/
 /data/
 *.exe
 *.txt
+/**/*.log
