@@ -32,7 +32,7 @@ class Timer:
 
 timer = Timer()
 
-xgrid.init(parallel=False, precision="float", opt_level=3)
+xgrid.init(parallel=False, precision="double", opt_level=3)
 
 float2d = xgrid.grid[float, 2]  # type: ignore
 
@@ -209,7 +209,7 @@ def pressure_poisson(p, dx, dy, b):
 def cavity_flow(nt, u, v, dt, dx, dy, p, rho, nu):
     un = numpy.empty_like(u)
     vn = numpy.empty_like(v)
-    b = numpy.zeros((SIZE_Y, SIZE_X), dtype=numpy.float32)
+    b = numpy.zeros((SIZE_Y, SIZE_X))
 
     for n in tqdm.tqdm(range(nt)):
         un = u.copy()
@@ -252,10 +252,10 @@ def cavity_flow(nt, u, v, dt, dx, dy, p, rho, nu):
     return u, v, p
 
 
-uref = numpy.zeros((SIZE_Y, SIZE_X), dtype=numpy.float32)
-vref = numpy.zeros((SIZE_Y, SIZE_X), dtype=numpy.float32)
-pref = numpy.zeros((SIZE_Y, SIZE_X), dtype=numpy.float32)
-bref = numpy.zeros((SIZE_Y, SIZE_X), dtype=numpy.float32)
+uref = numpy.zeros((SIZE_Y, SIZE_X))
+vref = numpy.zeros((SIZE_Y, SIZE_X))
+pref = numpy.zeros((SIZE_Y, SIZE_X))
+bref = numpy.zeros((SIZE_Y, SIZE_X))
 
 with timer.timing():
     uref, vref, pref = cavity_flow(

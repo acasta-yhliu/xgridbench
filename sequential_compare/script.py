@@ -23,7 +23,7 @@ with open("time.log", "r", encoding="utf-8") as f:
         y_numpy.append(float(numpy_time))
 
 plt.figure(dpi=200)
-plt.plot(x, y_xgrid, marker="o", label="XGrid (Optimized, Sequential)")
+plt.plot(x, y_xgrid, marker="o", label="XGrid (Sequential)")
 plt.plot(x, y_numpy, marker="^", label="Numpy")
 plt.xlabel("scale/x,y")
 plt.ylabel("time/s")

@@ -3,36 +3,12 @@ from sys import argv
 
 import tqdm
 import xgrid
-import numpy
-import time
+from scipy.interpolate import interp2d
+import matplotlib.pyplot as plt
+import numpy as np
 
-
-class Timer:
-    class TimerGuard:
-        def __init__(self, timer: "Timer") -> None:
-            self.timer = timer
-
-        def __enter__(self):
-            self.timer.start_time = time.time()
-
-        def __exit__(self, a, b, c):
-            self.timer.end_time = time.time()
-
-    def __init__(self) -> None:
-        self.start_time = time.time()
-        self.end_time = time.time()
-
-    @property
-    def elapsed(self):
-        return self.end_time - self.start_time
-
-    def timing(self):
-        return Timer.TimerGuard(self)
-
-
-timer = Timer()
-
-xgrid.init(parallel=True, precision="double")
+xgrid.init(cacheroot=".xgridtest", parallel=True,
+           precision="double", opt_level=3)
 
 float2d = xgrid.grid[float, 2]  # type: ignore
 
@@ -81,11 +57,8 @@ FRAMES = 1000
 config = Config(1.0, 0.1, TIME / FRAMES, 2 / (SIZE_X - 1), 2 / (SIZE_Y - 1))
 
 
-@xgrid.kernel(includes=["time.h"], macro=["clock_t start, end;"])
-def cavity_kernel(b: float2d, p: float2d, pt: float2d, u: float2d, v: float2d, cfg: Config) -> float:
-    with xgrid.c():
-        r"""start = clock();"""
-
+@xgrid.kernel()
+def cavity_kernel(b: float2d, p: float2d, pt: float2d, u: float2d, v: float2d, cfg: Config) -> None:
     b[0, 0] = (cfg.rho * (1.0 / cfg.dt *
                           ((u[0, 1] - u[0, -1]) /
                            (2.0 * cfg.dx) + (v[1, 0] - v[-1, 0]) / (2.0 * cfg.dy)) -
@@ -168,24 +141,36 @@ def cavity_kernel(b: float2d, p: float2d, pt: float2d, u: float2d, v: float2d, c
 
     with xgrid.boundary(2):
         u[0, 0] = 1.0
-    
-    with xgrid.c():
-        r"""
-        end = clock();
-        return (end - start) / (double)CLK_TCK;
-        """
 
-acc = 0
-with timer.timing():
-    for i in tqdm.tqdm(range(FRAMES)):
-        acc += cavity_kernel(b, p, pt, u, v, config)
 
-import matplotlib.pyplot as plt
-plt.style.use("classic")
-plt.figure(dpi=200)
-plt.bar(["Total", "Kernel", "Cost"], [timer.elapsed, acc, timer.elapsed - acc], align="center", color=["gray", "gray", "lightgray"])
-plt.ylabel("time/s")
-plt.title("True Kernel Invoke Time")
-plt.savefig("invoke_cost.png")
+x, y = 0.5, 1.8
+X, Y = [], []
 
-print((timer.elapsed - acc) / timer.elapsed)
+
+def interplot_location(x, y, u, v, dt):
+    nx = int(x / config.dx)
+    ny = int(y / config.dy)
+
+    uu = u[nx, ny]
+    vv = v[nx, ny]
+
+    # print(uu, vv)
+
+    return x + uu * dt, y + vv * dt
+
+
+fig = plt.figure()
+ax = plt.subplot(111, aspect = 'equal')
+plt.xlim(0, 2)
+plt.ylim(0, 2)
+
+
+
+for i in tqdm.tqdm(range(FRAMES)):
+    cavity_kernel(b, p, pt, u, v, config)
+    x, y = interplot_location(x, y, u.now, v.now, config.dt)
+    X.append(x)
+    Y.append(y)
+
+ax.plot(X, Y)
+plt.show()
